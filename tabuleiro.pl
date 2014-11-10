@@ -1,7 +1,7 @@
 :-consult(prints).
 
 board([[0,1,0,0,0,0,2,2,0,0,0,1,2,0],
-      [0,0,0,2,2,0,1,2,1,1,2,2,2,2],
+      [0,0,1,2,2,0,1,2,1,1,2,2,2,2],
       [2,0,0,1,1,1,1,1,1,1,2,0,0,0],
       [1,1,1,1,2,0,0,2,2,1,2,0,1,1],
       [0,0,0,0,2,0,0,0,0,1,1,1,1,0],
@@ -104,21 +104,8 @@ profundidade(Caminho, Xi-Yi, Xf-Yf, Sol,C,B):-
 %oneMoveTurn(X-Y,B,P,Bn).
 %twoMoveTurn(X1-Y1,X2-Y2,B,P,Bn).
 
-isDiag(X-Y,B,C,Xr-Yr):-
-        Xr is X+1,
-        Yr is Y+1,
-        isColor(Xr-Yr,C,B).
-isDiag(X-Y,B,C,Xr-Yr):-
-        Xr is X-1,
-        Yr is Y+1,
-        isColor(Xr-Yr,C,B).
-isDiag(X-Y,B,C,Xr-Yr):-
-        Xr is X+1,
-        Yr is Y-1,
-        isColor(Xr-Yr,C,B).
-isDiag(X-Y,B,C,Xr-Yr):-
-        Xr is X-1,
-        Yr is Y-1,
+
+isDiag(B,C,Xr-Yr):-
         isColor(Xr-Yr,C,B).
 areConnected(_X1-Y1,X2-_Y2,B,C):-
         Xr is X2,
@@ -129,20 +116,27 @@ areConnected(X1-_Y1,_X2-Y2,B,C):-
         Yr is Y2,
         isColor(Xr-Yr,C,B).
 
-
-validateMove(X-Y,B,C):-
-        isDiag(X-Y,B,C,Xr-Yr),
+validDiag(X-Y,B,C,Xr-Yr):-
+        isDiag(B,C,Xr-Yr),
         areConnected(X-Y,Xr-Yr,B,C).
+validDiag(_,B,C,Xr-Yr):-
+        \+ isDiag(B,C,Xr-Yr).
 validateMove(X-Y,B,C):-
-        \+ isDiag(X-Y,B,C,_).
+        X1 is X-1,
+        Y1 is Y-1,
+        validDiag(X-Y,B,C,X1-Y1),
+        X2 is X+1,
+        Y2 is Y-1,
+        validDiag(X-Y,B,C,X2-Y2),
+        X3 is X+1,
+        Y3 is Y+1,
+        validDiag(X-Y,B,C,X3-Y3),
+        X4 is X-1,
+        Y4 is Y+1,
+        validDiag(X-Y,B,C,X4-Y4).
 
 
-test:- board(B),printBoard(B).
-askInput(1,B):-
-        write('Where do you want to play?(ex: 3-5.)'),nl,
-        read(X-Y),nl,
-        treatInput(1,B,X-Y).
-        
+test(X1-Y1,X2-Y2):- board(B),printBoard(B),validDiag(X1-Y1,B,1,X2-Y2).
 
 treatInput(B,X-Y):-
         length(B,T),
@@ -154,6 +148,9 @@ treatInput(B,X-Y):-
         placePc(X-Y,1,B,Br),
         validateMove(X-Y,B,1),
         cycle(Br).
+treatInput(B,_):-
+        write('Invalid input'),nl,
+        cycle(B).
 treatInput(B,X1-Y1,X2-Y2):-
         length(B,T),
         integer(X1),
@@ -165,18 +162,42 @@ treatInput(B,X1-Y1,X2-Y2):-
         isEmpty(X2-Y2,B),
         placePc(X1-Y1,1,B,Br),
         placePc(X2-Y2,1,Br,Bf),
-        validateMove(X1-Y1,B,1),
-        validateMove(X2-Y2,B,1),
+        validateMove(X1-Y1,Bf,1),
+        validateMove(X2-Y2,Bf,1),
         cycle(Bf).
-treatInput(_,B,_):-
+treatInput(B,_,_):-
         write('Invalid input'),nl,
         cycle(B).
+
+treatInputType(B,X):-
+        integer(X),
+        X>0,
+        X<3,
+        askInput(X,B).
+treatInputType(B,_):-
+        write('invalid input'),nl,
+        askInputType(B).
+askInput(1,B):-
+        write('Where do you want to play?(ex: 3-5.)'),nl,
+        read(X-Y),nl,
+        treatInput(B,X-Y).
+askInput(2,B):-
+         write('Where do you want to play?(ex: 3-5. 4-5.  separete inputs with enter)'),nl,
+        read(X1-Y1),nl,
+        read(X2-Y2),nl,
+        treatInput(B,X1-Y1,X2-Y2).
+askInputType(B):-
+        write('How many moves do you want to make? (1/2)'),nl,
+        read(X),
+        treatInputType(B,X).
+        
 start:-
         board(B),
         cycle(B).
 cycle(B):-
         printBoard(B),
-        askInput(1,B).
+        askInputType(B).
+        
         
         
 
