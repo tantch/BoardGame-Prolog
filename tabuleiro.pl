@@ -1,19 +1,59 @@
 :-consult(prints).
 
-board([[0,1,0,0,0,0,2,2,0,0,0,1,2,0],
-      [0,0,1,2,2,0,1,2,1,1,2,2,2,2],
-      [2,0,0,1,1,1,1,1,1,1,2,0,0,0],
-      [1,1,1,1,2,0,0,2,2,1,2,0,1,1],
-      [0,0,0,0,2,0,0,0,0,1,1,1,1,0],
-      [0,2,0,2,2,0,1,0,2,1,0,2,0,1],
-      [0,0,0,1,0,0,2,2,2,0,0,0,0,1],
-      [1,0,0,1,2,2,2,1,0,0,1,0,0,0],
-      [0,2,2,1,1,0,2,1,0,0,0,0,2,0],
-      [1,0,2,2,1,0,2,0,0,2,0,0,0,0],
-      [1,1,1,2,2,2,2,2,0,0,0,1,0,0],
-      [0,0,2,2,0,0,0,2,1,0,2,0,2,2], 
-      [2,0,1,1,1,1,2,2,0,0,2,0,1,0],
-      [1,1,1,0,0,0,0,2,2,0,0,0,1,1]]).
+
+listFullOf(N, [X|Tail],X) :- N > 0, N2 is N-1, listFullOf(N2, Tail,X).
+listFullOf(0, [],_).
+
+
+changeColor(C,Cf):-
+        C =:= 1,!,
+        Cf is 2;
+        C =:= 2,!,
+        Cf is 1.
+nextLinePrep(F,Fi,C,Cf):-
+        F =:= 0,!,
+        Cf is C,
+        Fi is 3;
+        F =:= 1,!,
+        Cf is C,
+        Fi is 4;
+        F =:= 2,!,
+        changeColor(C,Cf),
+        Fi is 0;
+        F =:= 3,!,
+        changeColor(C,Cf),
+        Fi is 1;
+        F =:= 4,!,
+        changeColor(C,Cf),
+        Fi is 2.
+
+
+fillColumn(B,B,T,T,_,_,_).
+fillColumn(B,Bf,T,Col,F-Ci,Cp,FC):-
+        Cp<T,
+        placePc(Col-Cp,FC,B,B1),
+        Cp1 is Cp+5,
+        changeColor(FC,Cf),
+        fillColumn(B1,Bf,T,Col,F-Ci,Cp1,Cf).
+fillColumn(B,Bf,T,Col,F-Ci,_,_):-
+        Col1 is Col +1,
+        nextLinePrep(F,Fi,Ci,C1),
+        fillColumn(B,Bf,T,Col1,Fi-C1,Fi,C1).
+        
+        
+board(T,Br):-
+       listFullOf(T,Rows,0),
+       listFullOf(T,B,Rows), 
+       F is round(T/2 +1 -8),
+       F > -1,!,
+       fillColumn(B,Br,T,0,F-1,F,1);
+        listFullOf(T,Rows,0),
+       listFullOf(T,B,Rows), 
+       F is round(T/2 +1 -4),
+       F > -1,
+       fillColumn(B,Br,T,0,F-2,F,2).
+          
+       
 
 membro(X, [X|_]):- !. 
 membro(X, [_|Y]):- membro(X,Y). 
@@ -89,20 +129,20 @@ ligado(X1-Y1,X2-Y2,C,B):-
 
 inverte([X], [X]). 
 inverte([X|Y], Lista):- inverte(Y, Lista1), concatena(Lista1, [X], Lista). 
-winWhite(B):- 
-        profundidade([], 0-_Yi, 13-_Yf, _Sol_inv,1,B).
+winWhite(B):-         
+        length(B,T),
+        T1 is T-1,
+        profundidade([], 0-_Yi, T1-_Yf, _Sol_inv,1,B).
 winBlack(B):- 
-        profundidade([], 0-_Yi, 13-_Yf, _Sol_inv,2,B).
+        length(B,T),
+        T1 is T-1,
+        profundidade([], _-0, _-T1, _Sol_inv,2,B).
 
 profundidade(Caminho, Xf-Yf, Xf-Yf, [Xf-Yf|Caminho],_C,_B).
 profundidade(Caminho, Xi-Yi, Xf-Yf, Sol,C,B):- 
  ligado(Xi-Yi, X2-Y2,C,B),
  \+ membro(X2-Y2, Caminho),
  profundidade([Xi-Yi|Caminho], X2-Y2, Xf-Yf, Sol,C,B). 
-
-
-%oneMoveTurn(X-Y,B,P,Bn).
-%twoMoveTurn(X1-Y1,X2-Y2,B,P,Bn).
 
 
 isDiag(B,C,Xr-Yr):-
@@ -135,23 +175,21 @@ validateMove(X-Y,B,C):-
         Y4 is Y+1,
         validDiag(X-Y,B,C,X4-Y4).
 
-
-test(X1-Y1,X2-Y2):- board(B),printBoard(B),validDiag(X1-Y1,B,1,X2-Y2).
-
-treatInput(B,X-Y):-
+treatInput(B,X-Y,P-M):-
         length(B,T),
         integer(X),
         integer(Y),
         X<T,
         Y<T,
         isEmpty(X-Y,B),
-        placePc(X-Y,1,B,Br),
-        validateMove(X-Y,B,1),
-        cycle(Br).
-treatInput(B,_):-
+        placePc(X-Y,P,B,Br),
+        validateMove(X-Y,Br,1),!,
+        changeColor(P,P1),
+        cycle(Br,P1-M);
+
         write('Invalid input'),nl,
-        cycle(B).
-treatInput(B,X1-Y1,X2-Y2):-
+        cycle(B,P-M).
+treatInput(B,X1-Y1,X2-Y2,P-M):-
         length(B,T),
         integer(X1),
         integer(Y1),
@@ -159,44 +197,49 @@ treatInput(B,X1-Y1,X2-Y2):-
         integer(Y2),
         X1<T,Y1<T,X2<T,Y2<T,
         isEmpty(X1-Y1,B),
+        placePc(X1-Y1,P,B,Br),
         isEmpty(X2-Y2,B),
-        placePc(X1-Y1,1,B,Br),
-        placePc(X2-Y2,1,Br,Bf),
-        validateMove(X1-Y1,Bf,1),
-        validateMove(X2-Y2,Bf,1),
-        cycle(Bf).
-treatInput(B,_,_):-
+        placePc(X2-Y2,P,Br,Bf),
+        validateMove(X1-Y1,Bf,P),
+        validateMove(X2-Y2,Bf,P),
+        changeColor(P,P1),
+        cycle(Bf,P1-M).
+treatInput(B,_,_,P-M):-
         write('Invalid input'),nl,
-        cycle(B).
+        cycle(B,P-M).
 
-treatInputType(B,X):-
+treatInputType(B,X,P-M):-
         integer(X),
         X>0,
         X<3,
-        askInput(X,B).
-treatInputType(B,_):-
+        askInput(B,X,P-M).
+treatInputType(B,_,P-M):-
         write('invalid input'),nl,
-        askInputType(B).
-askInput(1,B):-
+        cycle(B,P-M).
+askInput(B,1,P-M):-
         write('Where do you want to play?(ex: 3-5.)'),nl,
         read(X-Y),nl,
-        treatInput(B,X-Y).
-askInput(2,B):-
+        treatInput(B,X-Y,P-M).
+askInput(B,2,P-M):-
          write('Where do you want to play?(ex: 3-5. 4-5.  separete inputs with enter)'),nl,
         read(X1-Y1),nl,
+        placePc(X1-Y1,P,B,Bd),printBoard(Bd),
         read(X2-Y2),nl,
-        treatInput(B,X1-Y1,X2-Y2).
-askInputType(B):-
+        treatInput(B,X1-Y1,X2-Y2,P-M).
+askInputType(B,P-M):-
+        write('Player '),write(P),write(','),nl,
         write('How many moves do you want to make? (1/2)'),nl,
         read(X),
-        treatInputType(B,X).
+        treatInputType(B,X,P-M).
         
 start:-
-        board(B),
-        cycle(B).
-cycle(B):-
+        board(12,B),
+        cycle(B,1-1).
+
+%P-n jogador M- modo de jogador 1/2/3(humano/random/ai)
+cycle(B,P-M):-
         printBoard(B),
-        askInputType(B).
+        askInputType(B,P-M).
         
         
         
