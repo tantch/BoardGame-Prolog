@@ -45,12 +45,12 @@ fillColumn(B,Bf,T,Col,F-Ci,_,_):-
 board(T,Br):-
        listFullOf(T,Rows,0),
        listFullOf(T,B,Rows), 
-       F is round(T/2 +1 -8),
+       F is round(T/2 +1 -10),
        F > -1,!,
        fillColumn(B,Br,T,0,F-1,F,1);
         listFullOf(T,Rows,0),
        listFullOf(T,B,Rows), 
-       F is round(T/2 +1 -4),
+       F is round(T/2 +1 -5),
        F > -1,
        fillColumn(B,Br,T,0,F-2,F,2).
           
@@ -145,6 +145,31 @@ profundidade(Caminho, Xi-Yi, Xf-Yf, Sol,C,B):-
  \+ membro(X2-Y2, Caminho),
  profundidade([Xi-Yi|Caminho], X2-Y2, Xf-Yf, Sol,C,B). 
 
+nextCo(X-Y,Xf-Yf,B):-
+        length(B,T),
+        T1 is T-1,
+        X<T1,!,
+        Xf is X+1,
+        Yf is Y;
+        
+        length(B,T),
+        T1 is T-1,
+        Y<T1,!,
+        Xf is 0,
+        Yf is Y+1;
+        
+        Xf is 20,
+        Yf is 20.   
+        
+camposVazios(F,20-20,F,_,_):-!.
+camposVazios(Lv,X-Y,F,B,C):-
+        validateMove(X-Y,B,C),
+        isEmpty(X-Y,B),
+        nextCo(X-Y,Xf-Yf,B),
+        camposVazios([X-Y|Lv],Xf-Yf,F,B,C).
+camposVazios(Lv,X-Y,F,B,C):-
+        nextCo(X-Y,Xf-Yf,B),
+        camposVazios(Lv,Xf-Yf,F,B,C).
 
 isDiag(B,C,Xr-Yr):-
         isColor(Xr-Yr,C,B).
@@ -177,9 +202,48 @@ validateMove(X-Y,B,C):-
         validDiag(X-Y,B,C,X4-Y4).
 readComputerRandomType(X):-
         random(1,3,X).
-readComputerRandomInput(X-Y,T):-
-        random(0,T,X),
-        random(0,T,Y).
+readComputerRandomInput(X-Y,B,P):-
+        camposVazios([],0-0,F,B,P),
+        length(F,T),
+        random(0,T,C),
+        nth0(C,F,X-Y),!,
+        write(X-Y),nl.
+
+chooseAi(X-Y,F,B,P,R):-
+        R < 0,!,
+        X is -1,
+        Y is -1;
+        
+        P is 1,
+        isColor(0-Yr,P,B),
+        isEmpty(X-Y,B),
+        membro(X-Y,F),
+        placePc(X-Y,P,B,Br),
+        profundidade([], 0-Yr, X-Y, _Sol,P,Br),
+        X>R;
+        
+        P =:= 2,
+        isColor(Xr-0,P,B),
+        isEmpty(X-Y,B),
+        membro(X-Y,F),
+        placePc(X-Y,P,B,Br),
+        profundidade([], Xr-0, X-Y, _Sol,P,Br),
+        Y>R;
+        
+        
+        R1 is R-1,
+        chooseAi(X-Y,F,B,P,R1).
+        
+        
+        
+
+readComputerAiInput(X-Y,B,P):-
+        camposVazios([],0-0,F,B,P),!,
+        length(B,T),
+        chooseAi(X-Y,F,B,P,T),!,
+        write(X-Y),nl.
+                             
+                     
 
 treatInput(B,X-Y,P-M):-
         length(B,T),
@@ -191,10 +255,19 @@ treatInput(B,X-Y,P-M):-
         placePc(X-Y,P,B,Br),
         validateMove(X-Y,Br,P),!,
         changeColor(P,P1),
-        cycle(Br,P1-M);
+        cycle(Br,P1-M,1).
 
-        write('Invalid input'),nl,
-        cycle(B,P-M).
+
+treatInput(B,_,P-M):-
+        P=:=1,
+        M =\=3,
+        write('Invalid input'),nl,!,
+        cycle(B,P-M,1);
+        P=:=2,
+        M =:= 1,
+        write('Invalid input'),nl,!,
+        cycle(B,P-M,1);
+        cycle(B,P-M,2).
 treatInput(B,X1-Y1,X2-Y2,P-M):-
         length(B,T),
         integer(X1),
@@ -209,10 +282,17 @@ treatInput(B,X1-Y1,X2-Y2,P-M):-
         validateMove(X1-Y1,Bf,P),
         validateMove(X2-Y2,Bf,P),
         changeColor(P,P1),
-        cycle(Bf,P1-M).
+        cycle(Bf,P1-M,1).
 treatInput(B,_,_,P-M):-
+        P=:=1,
+        M =\=3,!,
         write('Invalid input'),nl,
-        cycle(B,P-M).
+        cycle(B,P-M,1);
+        P=:=2,
+        M =:= 1,!,
+        write('Invalid input'),nl,
+        cycle(B,P-M,1);
+        cycle(B,P-M,2).
 
 treatInputType(B,X,P-M):-
         integer(X),
@@ -220,24 +300,30 @@ treatInputType(B,X,P-M):-
         X<3,
         askInput(B,X,P-M).
 treatInputType(B,_,P-M):-
-        write('invalid input'),nl,
-        cycle(B,P-M).
+        P =:= 1,
+        M =\= 3,!,
+        write('Invalid input'),nl,
+        cycle(B,P-M,1);
+        P=:=2,
+        M =:= 1,!,
+        write('Invalid input'),nl,
+        cycle(B,P-M,1);
+        cycle(B,P-M,2).
 askInput(B,1,P-M):-
-        P=:=1,
+        P =:= 1,
         M =\= 3,!,
         write('Where do you want to play?(ex: 3-5.)'),nl,
         read(X-Y),nl,
         treatInput(B,X-Y,P-M);
 
-        P=:=2,
+        P =:= 2,
         M =:= 1,!,
         write('Where do you want to play?(ex: 3-5.)'),nl,
         read(X-Y),nl,
         treatInput(B,X-Y,P-M);
         
         
-        length(B,T),
-        readComputerRandomInput(X-Y,T),nl,
+        readComputerAiInput(X-Y,B,P),
         treatInput(B,X-Y,P-M).
         
 askInput(B,2,P-M):-
@@ -257,9 +343,9 @@ askInput(B,2,P-M):-
         read(X2-Y2),nl,
         treatInput(B,X1-Y1,X2-Y2,P-M);
         
-        length(B,T),
-        readComputerRandomInput(X1-Y1,T),nl,
-        readComputerRandomInput(X2-Y2,T),nl,
+        readComputerAiInput(X1-Y1,B,P),
+        placePc(X1-Y1,P,B,Bs),
+        readComputerAiInput(X2-Y2,Bs,P),
         treatInput(B,X1-Y1,X2-Y2,P-M).
         
 askInputType(B,P-M):-
@@ -299,10 +385,10 @@ startMenu(M,T):-
 start:-
         startMenu(M,T),
         board(T,B),!,
-        cycle(B,1-M).
+        cycle(B,2-M,1).
 
 %P-n jogador M- modo de jogador 1/2/3(humano/random/ai)
-cycle(B,_):-
+cycle(B,_,_):-
         winWhite(B),!,
         printBoard(B),
         write('Player 1 (White) wins the game\n Congrats!\n');
@@ -311,8 +397,10 @@ cycle(B,_):-
         write('Player 2 (Black) wins the game\n Congrats!\n').
 
 
-cycle(B,P-M):-
+cycle(B,P-M,H):-
+        H=:= 1,
         printBoard(B),
+        askInputType(B,P-M);
         askInputType(B,P-M).
         
         
