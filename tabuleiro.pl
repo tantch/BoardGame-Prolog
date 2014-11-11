@@ -1,4 +1,5 @@
 :-consult(prints).
+:-use_module(library(random)).
 
 
 listFullOf(N, [X|Tail],X) :- N > 0, N2 is N-1, listFullOf(N2, Tail,X).
@@ -174,6 +175,11 @@ validateMove(X-Y,B,C):-
         X4 is X-1,
         Y4 is Y+1,
         validDiag(X-Y,B,C,X4-Y4).
+readComputerRandomType(X):-
+        random(1,3,X).
+readComputerRandomInput(X-Y,T):-
+        random(0,T,X),
+        random(0,T,Y).
 
 treatInput(B,X-Y,P-M):-
         length(B,T),
@@ -217,31 +223,75 @@ treatInputType(B,_,P-M):-
         write('invalid input'),nl,
         cycle(B,P-M).
 askInput(B,1,P-M):-
+        P=:=1,
+        M =\= 3,!,
         write('Where do you want to play?(ex: 3-5.)'),nl,
         read(X-Y),nl,
+        treatInput(B,X-Y,P-M);
+
+        P=:=2,
+        M =:= 1,!,
+        write('Where do you want to play?(ex: 3-5.)'),nl,
+        read(X-Y),nl,
+        treatInput(B,X-Y,P-M);
+        
+        
+        length(B,T),
+        readComputerRandomInput(X-Y,T),nl,
         treatInput(B,X-Y,P-M).
+        
 askInput(B,2,P-M):-
-         write('Where do you want to play?(ex: 3-5. 4-5.  separete inputs with enter)'),nl,
+        P =:= 1,
+        M =\= 3,!,
+        write('Where do you want to play?(ex: 3-5. 4-5.  separete inputs with enter)'),nl,
         read(X1-Y1),nl,
         placePc(X1-Y1,P,B,Bd),printBoard(Bd),
         read(X2-Y2),nl,
+        treatInput(B,X1-Y1,X2-Y2,P-M);
+        
+        P=:=2,
+        M =:= 1,!,
+        write('Where do you want to play?(ex: 3-5. 4-5.  separete inputs with enter)'),nl,
+        read(X1-Y1),nl,
+        placePc(X1-Y1,P,B,Bd),printBoard(Bd),
+        read(X2-Y2),nl,
+        treatInput(B,X1-Y1,X2-Y2,P-M);
+        
+        length(B,T),
+        readComputerRandomInput(X1-Y1,T),nl,
+        readComputerRandomInput(X2-Y2,T),nl,
         treatInput(B,X1-Y1,X2-Y2,P-M).
+        
 askInputType(B,P-M):-
+        P =:= 1,
+        M =\= 3,!,
         write('Player '),write(P),write(','),nl,
         write('How many moves do you want to make? (1/2)'),nl,
         read(X),
+        treatInputType(B,X,P-M);
+        P =:= 2,
+        M =:= 1,!,
+        write('Player '),write(P),write(','),nl,
+        write('How many moves do you want to make? (1/2)'),nl,
+        read(X),
+        treatInputType(B,X,P-M);
+        
+        readComputerRandomType(X),
         treatInputType(B,X,P-M).
+        
+
+
 startMenu(M,T):-
         printMenu,
         read(M),nl,
         integer(M),
         M>0,
         M<4,
-        write('Choose the side of the board: (12-20)\n'),
+        write('Choose the side of the board: (Pair between 12-20)\n'),
         read(T),
         integer(T),
         T>11,
-        T<20,
+        T<21,
         T1 is round(T mod 2),    
         T1 is 0;
         write('invalid input\n'),
