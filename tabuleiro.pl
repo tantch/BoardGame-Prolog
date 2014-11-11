@@ -183,7 +183,7 @@ treatInput(B,X-Y,P-M):-
         Y<T,
         isEmpty(X-Y,B),
         placePc(X-Y,P,B,Br),
-        validateMove(X-Y,Br,1),!,
+        validateMove(X-Y,Br,P),!,
         changeColor(P,P1),
         cycle(Br,P1-M);
 
@@ -198,7 +198,7 @@ treatInput(B,X1-Y1,X2-Y2,P-M):-
         X1<T,Y1<T,X2<T,Y2<T,
         isEmpty(X1-Y1,B),
         placePc(X1-Y1,P,B,Br),
-        isEmpty(X2-Y2,B),
+        isEmpty(X2-Y2,Br),
         placePc(X2-Y2,P,Br,Bf),
         validateMove(X1-Y1,Bf,P),
         validateMove(X2-Y2,Bf,P),
@@ -231,12 +231,36 @@ askInputType(B,P-M):-
         write('How many moves do you want to make? (1/2)'),nl,
         read(X),
         treatInputType(B,X,P-M).
-        
+startMenu(M,T):-
+        printMenu,
+        read(M),nl,
+        integer(M),
+        M>0,
+        M<4,
+        write('Choose the side of the board: (12-20)\n'),
+        read(T),
+        integer(T),
+        T>11,
+        T<20,
+        T1 is round(T mod 2),    
+        T1 is 0;
+        write('invalid input\n'),
+        startMenu(M,T).
 start:-
-        board(12,B),
-        cycle(B,1-1).
+        startMenu(M,T),
+        board(T,B),!,
+        cycle(B,1-M).
 
 %P-n jogador M- modo de jogador 1/2/3(humano/random/ai)
+cycle(B,_):-
+        winWhite(B),!,
+        printBoard(B),
+        write('Player 1 (White) wins the game\n Congrats!\n');
+        winBlack(B),!,
+        printBoard(B),
+        write('Player 2 (Black) wins the game\n Congrats!\n').
+
+
 cycle(B,P-M):-
         printBoard(B),
         askInputType(B,P-M).
