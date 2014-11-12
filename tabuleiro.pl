@@ -311,7 +311,8 @@ treatInputType(B,_,P-M):-
         cycle(B,P-M,2).
 askInput(B,1,P-M):-
         P =:= 1,
-        M =\= 3,!,
+        M =\= 3,
+        M =\= 5,!,
         write('Where do you want to play?(ex: 3-5.)'),nl,
         read(X-Y),nl,
         treatInput(B,X-Y,P-M);
@@ -323,12 +324,19 @@ askInput(B,1,P-M):-
         treatInput(B,X-Y,P-M);
         
         
+        M<4,!,
+        readComputerRandomInput(X-Y,B,P),
+        treatInput(B,X-Y,P-M);
+        
         readComputerAiInput(X-Y,B,P),
         treatInput(B,X-Y,P-M).
+
+        
         
 askInput(B,2,P-M):-
         P =:= 1,
-        M =\= 3,!,
+        M =\= 3,
+        M =\= 5,!,
         write('Where do you want to play?(ex: 3-5. 4-5.  separete inputs with enter)'),nl,
         read(X1-Y1),nl,
         placePc(X1-Y1,P,B,Bd),printBoard(Bd),
@@ -343,6 +351,12 @@ askInput(B,2,P-M):-
         read(X2-Y2),nl,
         treatInput(B,X1-Y1,X2-Y2,P-M);
         
+        M<4,!,
+        readComputerRandomInput(X1-Y1,B,P),
+        placePc(X1-Y1,P,B,Bs),
+        readComputerRandomInput(X2-Y2,Bs,P),
+        treatInput(B,X1-Y1,X2-Y2,P-M);
+
         readComputerAiInput(X1-Y1,B,P),
         placePc(X1-Y1,P,B,Bs),
         readComputerAiInput(X2-Y2,Bs,P),
@@ -350,7 +364,8 @@ askInput(B,2,P-M):-
         
 askInputType(B,P-M):-
         P =:= 1,
-        M =\= 3,!,
+        M =\= 3,
+        M =\= 5,!,
         write('Player '),write(P),write(','),nl,
         write('How many moves do you want to make? (1/2)'),nl,
         read(X),
@@ -362,7 +377,11 @@ askInputType(B,P-M):-
         read(X),
         treatInputType(B,X,P-M);
         
+        M<4,!,
         readComputerRandomType(X),
+        treatInputType(B,X,P-M);
+        
+        readComputerRandomType(X),!,
         treatInputType(B,X,P-M).
         
 
@@ -382,10 +401,23 @@ startMenu(M,T):-
         T1 is 0;
         write('invalid input\n'),
         startMenu(M,T).
+
+changeM(X,M,Mf):-
+        X=:=1,!,
+        Mf is M;
+        Mf is M+2.
+aiMenu(M,Mr):-
+        M =:= 1,!;
+        write('What dificulty do you want the computer?(1-Random , 2-AI)'),nl,
+        read(X),
+        changeM(X,M,Mr).
 start:-
         startMenu(M,T),
+        write(M),nl,
         board(T,B),!,
-        cycle(B,2-M,1).
+        aiMenu(M,Mf),!,
+        write(Mf),nl,
+        cycle(B,2-Mf,1).
 
 %P-n jogador M- modo de jogador 1/2/3(humano/random/ai)
 cycle(B,_,_):-
